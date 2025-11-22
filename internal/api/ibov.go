@@ -18,7 +18,7 @@ func NewIBOVClient(token string) *IBOVClient {
 		Token:   token,
 		BaseURL: "http://www.ibovfinancials.com/api",
 		HTTPClient: &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: 3 * time.Second,
 		},
 	}
 }
