@@ -11,7 +11,7 @@ import (
 // func handler(ctx context.Context) error {
 // 	log.Println("Monitoramento iniciado...")
 
-// 	client := api.NewIBOVClient("a57aa95b57af20642e9d2f691d4edd7da572479d")
+// 	client := api.NewIBOVClient("IBOV_TOKEN_AQUI")
 
 // 	preco, err := client.GetPrecoAtual("MXRF11")
 // 	if err != nil {
@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// --- 2. Cria client da API ---
-	client := api.NewIBOVClient("a57aa95b57af20642e9d2f691d4edd7da572479d")
+	client := api.NewIBOVClient("IBOV_TOKEN_AQUI")
 
 	// --- 3. Executa monitoramento ---
 	resultados := monitoramento.ExecutarMonitoramento(client, cart, 5.0)
