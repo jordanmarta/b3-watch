@@ -2,30 +2,22 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
+	"github.com/jordanmarta/b3-watch/internal/alertas"
 	"github.com/jordanmarta/b3-watch/internal/api"
 	"github.com/jordanmarta/b3-watch/internal/carteira"
 	"github.com/jordanmarta/b3-watch/internal/monitoramento"
 )
 
-// func handler(ctx context.Context) error {
-// 	log.Println("Monitoramento iniciado...")
-
-// 	client := api.NewIBOVClient("IBOV_TOKEN_AQUI")
-
-// 	preco, err := client.GetPrecoAtual("MXRF11")
-// 	if err != nil {
-// 		log.Println("Erro ao buscar preço:", err)
-// 	} else {
-// 		log.Println("Preço atual MXRF11:", preco)
-// 	}
-
-// 	return nil
-// }
-
 func main() {
+	token := os.Getenv("IBOV_TOKEN")
+	if token == "" {
+		fmt.Println("Defina IBOV_TOKEN antes de rodar: export IBOV_TOKEN=...")
+		return
+	}
 
-	// --- 1. Carrega CSV ---
 	cart, err := carteira.LoadCarteiraCSV("carteira.csv")
 	if err != nil {
 		fmt.Println("Erro ao carregar CSV:", err)
@@ -38,41 +30,38 @@ func main() {
 			t.Codigo, t.Quantidade, t.PrecoMedio)
 	}
 
-	// --- 2. Cria client da API ---
-	client := api.NewIBOVClient("IBOV_TOKEN_AQUI")
+	percentStr := os.Getenv("ALERT_PERCENT")
+	if percentStr == "" {
+		percentStr = "5"
+	}
+	percent, _ := strconv.ParseFloat(percentStr, 64)
 
-	// --- 3. Executa monitoramento ---
-	resultados := monitoramento.ExecutarMonitoramento(client, cart, 5.0)
+	client := api.NewIBOVClient(token)
 
-	// --- 4. Exibe resultados ---
+	resultados := monitoramento.ExecutarMonitoramento(client, cart, percent)
+
 	fmt.Println("\nResultados do Monitoramento:")
 	for _, r := range resultados {
-		fmt.Printf(" [%s] Atual: %.2f | PM: %.2f | <PM? %v | <5%%? %v\n",
+		fmt.Printf(" [%s] Atual: %.2f | PM: %.2f | <PM? %v | <%.2f%%? %v\n",
 			r.Codigo,
 			r.PrecoAtual,
 			r.PrecoMedio,
 			r.AbaixoPM,
+			percent,
 			r.AbaixoPercentual,
 		)
 	}
+
+	alertasGerados := alertas.FiltrarAlertas(resultados)
+	fmt.Printf("\nAlertas encontrados: %d\n", len(alertasGerados))
+
+	if len(alertasGerados) == 0 {
+		fmt.Println("Nenhuma oportunidade.")
+		return
+	}
+
+	html := alertas.MontarEmailHTML(alertasGerados)
+
+	fmt.Println("\nPreview do HTML gerado:\n")
+	fmt.Println(html)
 }
-
-// func main() {
-// 	carteira, err := carteira.LoadCarteiraCSV("carteira.csv")
-// 	if err != nil {
-// 		log.Println("Erro ao carregar carteira:", err)
-// 	} else {
-// 		log.Println("Carteira carregada:")
-// 		for _, c := range carteira {
-// 			log.Printf(" - %s | Quantidade: %d | Preço Médio: %.2f",
-// 				c.Codigo, c.Quantidade, c.PrecoMedio)
-// 		}
-// 	}
-
-// 	// // Detecta se estamos rodando local ou na Lambda
-// 	// if os.Getenv("AWS_LAMBDA_RUNTIME_API") != "" {
-// 	// 	lambda.Start(handler)
-// 	// } else {
-// 	// 	handler(context.Background())
-// 	// }
-// }
